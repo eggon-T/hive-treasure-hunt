@@ -4,17 +4,17 @@ import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB3pstZvq7Gl4WDBF_XNCeLwCmozgD1BtU",
-  authDomain: "treasure-hunt-eff8a.firebaseapp.com",
-  projectId: "treasure-hunt-eff8a",
-  storageBucket: "treasure-hunt-eff8a.appspot.com",
-  messagingSenderId: "351928709608",
-  appId: "1:351928709608:web:2418a8b4e223ffb422345d",
-  measurementId: "G-06L5LT861Q"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth()
-export {db,auth}
+const auth = getAuth();
+export { db, auth };
