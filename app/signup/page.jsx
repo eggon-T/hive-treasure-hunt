@@ -6,7 +6,6 @@ import { createUserWithEmailAndPassword } from "firebase/auth"
 import { auth, db } from "@/firebase/config"
 import { doc, setDoc } from "firebase/firestore"
 import { StaticBackground } from "@/components/static-background"
-import { SignalScanner } from "@/components/signal-scanner"
 
 export default function Signup() {
   const [name, setName] = useState("")
@@ -23,17 +22,15 @@ export default function Signup() {
       const user = userCredential.user
       await setDoc(doc(db, "users", email), {
         name: name,
-        a: false,
-        b: false,
-        c: false,
-        d: false,
-        e: false,
-        f: false,
-        g: false,
-        h: false,
-        path: [],
-        startTime: new Date(),
-        endTime: new Date(),
+        qr1: false,
+        qr2: false,
+        qr3: false,
+        qr4: false,
+        qr5: false,
+        qr6: false,
+        startTime: null,
+        stopTime: null,
+        timeTaken: null,
       })
       router.push("/instruction")
     } catch (e) {
@@ -45,7 +42,6 @@ export default function Signup() {
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden font-rajdhani">
       <StaticBackground />
-      <SignalScanner />
 
       <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
 

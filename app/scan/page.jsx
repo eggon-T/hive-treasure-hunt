@@ -1,16 +1,15 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { handleData, handleQuestionSubmit } from "../functions"
+import { handleData, markQRScanned } from "../functions"
 import { useAuth } from "@/firebase/auth"
 import { useRouter } from "next/navigation"
 import QrScanner from "@/components/qr-scanner"
 import { StaticBackground } from "@/components/static-background"
-import { SignalScanner } from "@/components/signal-scanner"
 import { ProgressTimeline } from "@/components/progress-timeline"
 import { GAME_CONFIG } from "../game-config"
 
-// QR Code hints mapping
+// QR Code hints mapping (all frontend, no DB needed)
 const QR_HINTS = {
   qr1: "Where silence lives among knowledge infinite, Find the place where books illuminate minds.",
   qr2: "Where minds recharge and conversations flow, Find the place where hunger disappears.",
@@ -23,19 +22,18 @@ const QR_HINTS = {
 export default function Scan() {
   const router = useRouter()
   const User = useAuth()
-  
+
   // Core state
-  const [currentHint, setCurrentHint] = useState("") // The hint text to display (active level)
-  const [allHints, setAllHints] = useState([]) // History of all hints
-  const [expectedQR, setExpectedQR] = useState("") // Expected QR code value
+  const [currentHint, setCurrentHint] = useState("")
+  const [expectedQR, setExpectedQR] = useState("")
   const [level, setLevel] = useState(1)
   const [userName, setUserName] = useState("")
-  const [userPath, setUserPath] = useState("") // User's QR scanning path/order
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
 
   const [signalStrength, setSignalStrength] = useState(0)
-  const [errorMessage, setErrorMessage] = useState("") // Error message for wrong QR scan
+  const [errorMessage, setErrorMessage] = useState("")
+  const [matchedQRInfo, setMatchedQRInfo] = useState(null)
 
   // Load level data from Firebase
   const loadLevelData = useCallback(async () => {
@@ -45,29 +43,16 @@ export default function Scan() {
       setLoading(true)
       const data = await handleData(User.email)
 
-      if (data?.StartTime) {
-        // Game completed
+      if (!data) return
+
+      if (data.completed) {
         router.push("/completion")
         return
       }
 
-      if (data) {
-        const currentLevel = data.level || 1
-        setLevel(currentLevel)
-        setUserName(data.userName || "")
-        // Set expected QR to match numbered order (qr1, qr2, etc.)
-        // Set expected QR to match numbered order (qr1, qr2, etc.)
-        setExpectedQR(`qr${currentLevel}`)
-        setUserPath(data.path || "")
-        
-        // Update all hints history
-        if (data.allHints) {
-          setAllHints(data.allHints)
-        }
-
-        // Do NOT set currentHint here. We only show it AFTER scanning.
-        // setCurrentHint(...) 
-      }
+      setLevel(data.level)
+      setUserName(data.userName)
+      setExpectedQR(`qr${data.level}`)
     } catch (error) {
       console.error("Error loading level data:", error)
     } finally {
@@ -75,93 +60,71 @@ export default function Scan() {
     }
   }, [User, router])
 
-  // Handle QR code scan - match hint and update status automatically
+  // Handle QR code scan
   const handleQRScan = useCallback((scannedText) => {
     console.log("QR scanned:", scannedText, "Current level:", level)
-    
-    // First, try to extract QR number from scanned text (qr1, qr2, clue1, etc.)
+
+    // Extract QR number from scanned text (qr1, qr2, clue1, etc.)
     const qrMatch = scannedText.toLowerCase().match(/(?:qr|clue)(\d+)/)
     let matchedQR = null
     let matchedHint = null
-    
+
     if (qrMatch) {
       const qrNumber = qrMatch[1]
       const qrKey = `qr${qrNumber}`
       matchedQR = qrNumber
       matchedHint = QR_HINTS[qrKey]
     } else {
-      // If no QR number, try to match the scanned text to one of our hints
+      // Try to match scanned text to one of our hints
       const scannedLower = scannedText.toLowerCase().trim()
       for (const [qrKey, hintText] of Object.entries(QR_HINTS)) {
         const hintLower = hintText.toLowerCase().trim()
-        // Match if scanned text contains key parts of the hint
-        if (scannedLower === hintLower || 
-            scannedLower.includes(hintLower.substring(0, 30)) ||
-            hintLower.includes(scannedLower.substring(0, 30))) {
+        if (scannedLower === hintLower ||
+          scannedLower.includes(hintLower.substring(0, 30)) ||
+          hintLower.includes(scannedLower.substring(0, 30))) {
           matchedQR = qrKey.replace('qr', '')
           matchedHint = hintText
           break
         }
       }
     }
-    
-    // Display the hint immediately
-    if (matchedHint) {
-      console.log("Matched QR", matchedQR, "Setting hint:", matchedHint)
-      
-      // Check if this is the correct QR for the current level
-      const expectedQRNumber = String(level)
-      if (matchedQR === expectedQRNumber) {
-        if (processing) return // Prevent multiple triggers
-        
-        console.log("✅ Correct QR scanned! Advancing level automatically...")
-        setCurrentHint(matchedHint) 
-        setProcessing(true) // Lock immediately to prevent duplicate scans
 
-        // Automatically advance to next level after a delay
+    if (matchedHint) {
+      const expectedQRNumber = String(level)
+
+      if (matchedQR === expectedQRNumber) {
+        if (processing) return
+
+        console.log("✅ Correct QR scanned!")
+        setCurrentHint(matchedHint)
+        setMatchedQRInfo({ qrNumber: matchedQR, isCorrect: true, hint: matchedHint })
+        setProcessing(true)
+
+        // Advance after a delay
         setTimeout(async () => {
           try {
-            // PASS EXPECTED LEVEL INDEX (level - 1) for Security Validation
-            await handleQuestionSubmit(User, level - 1) 
+            await markQRScanned(User.email, Number(matchedQR))
             setCurrentHint("")
+            setMatchedQRInfo(null)
             await loadLevelData()
           } catch (error) {
             alert(error.message || "Error processing scan")
           } finally {
             setProcessing(false)
           }
-        }, 4000) // 4 second delay to allow user to read the hint/confirmation
+        }, 4000)
       } else {
+        // Wrong sequence — just show error, nothing else
         console.log("❌ Wrong QR - Expected:", expectedQRNumber, "Got:", matchedQR)
-        setErrorMessage("PROTOCOL VIOLATION: OUT OF SEQUENCE SCAN DETECTED")
-        
-        // Clear error after 3 seconds
+        setErrorMessage("Wrong sequence! Find the correct QR code.")
         setTimeout(() => {
           setErrorMessage("")
         }, 3000)
       }
     } else {
-      // Fallback: display scanned text
-      console.log("No match found, displaying scanned text")
-      setCurrentHint(scannedText)
+      console.log("No match found for scanned text")
     }
   }, [level, User, loadLevelData, processing])
-
-  // Handle correct QR match - advance to next level (used by QR scanner component)
-  const handleCorrectQR = useCallback(async () => {
-    try {
-      setProcessing(true)
-      await handleQuestionSubmit(User)
-      // Clear current hint for next level
-      setCurrentHint("")
-      // Load next level
-      await loadLevelData()
-    } catch (error) {
-      alert(error.message || "Error processing scan")
-    } finally {
-      setProcessing(false)
-    }
-  }, [User, loadLevelData])
 
   // Initial load
   useEffect(() => {
@@ -185,13 +148,12 @@ export default function Scan() {
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden font-rajdhani">
       <StaticBackground />
-      <SignalScanner />
       <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
 
       <div className="relative z-20 min-h-screen flex flex-col p-4 sm:p-6">
-        {/* Header with GTA-style Timeline */}
+        {/* Header with Progress */}
         <div className="mb-6 sm:mb-8 space-y-4">
-          {/* GTA-style Progress Timeline Bar */}
+          {/* Progress Bar */}
           <div className="w-full">
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500/80 uppercase">
@@ -201,18 +163,14 @@ export default function Scan() {
                 {level - 1} / {GAME_CONFIG.TOTAL_LEVELS}
               </span>
             </div>
-            {/* Progress Bar Container */}
             <div className="relative w-full h-6 sm:h-8 bg-black/60 border-2 border-cyan-500/50 overflow-hidden">
-              {/* Progress Fill */}
-              <div 
+              <div
                 className="absolute top-0 left-0 h-full bg-gradient-to-r from-cyan-500 via-cyan-400 to-cyan-500 transition-all duration-500 ease-out shadow-[0_0_20px_rgba(6,182,212,0.8)]"
                 style={{ width: `${((level - 1) / GAME_CONFIG.TOTAL_LEVELS) * 100}%` }}
               >
-                {/* Animated shine effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
               </div>
-              
-              {/* Level Markers */}
+
               <div className="absolute inset-0 flex items-center justify-between px-1">
                 {Array.from({ length: GAME_CONFIG.TOTAL_LEVELS }, (_, i) => {
                   const isCompleted = i < level - 1
@@ -220,30 +178,27 @@ export default function Scan() {
                   return (
                     <div
                       key={i}
-                      className={`relative z-10 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${
-                        isCompleted
+                      className={`relative z-10 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${isCompleted
                           ? "bg-cyan-300 shadow-[0_0_8px_rgba(6,182,212,1)]"
                           : isCurrent
                             ? "bg-cyan-500 shadow-[0_0_12px_rgba(6,182,212,1)] animate-pulse"
                             : "bg-cyan-500/30"
-                      }`}
+                        }`}
                     />
                   )
                 })}
               </div>
-              
-              {/* Level Numbers Below */}
+
               <div className="absolute -bottom-5 left-0 right-0 flex justify-between px-0.5">
                 {Array.from({ length: GAME_CONFIG.TOTAL_LEVELS }, (_, i) => (
                   <span
                     key={i}
-                    className={`text-[8px] sm:text-[10px] font-mono font-bold transition-all ${
-                      i < level - 1
+                    className={`text-[8px] sm:text-[10px] font-mono font-bold transition-all ${i < level - 1
                         ? "text-cyan-400"
                         : i === level - 1
                           ? "text-cyan-300"
                           : "text-cyan-500/40"
-                    }`}
+                      }`}
                   >
                     {i + 1}
                   </span>
@@ -267,8 +222,8 @@ export default function Scan() {
               </div>
             </div>
           </div>
-          
-          {/* QR Scanning Order - Show numbered order (1, 2, 3, 4, 5, 6) */}
+
+          {/* QR Scanning Order */}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500/70 uppercase">
               SCAN ORDER:
@@ -280,14 +235,13 @@ export default function Scan() {
                 const isCurrent = index === level - 1
                 return (
                   <div
-                    key={`clue${qrNumber}`}
-                    className={`px-2 py-1 text-[10px] sm:text-xs font-mono font-bold border transition-all ${
-                      isCompleted
+                    key={`qr${qrNumber}`}
+                    className={`px-2 py-1 text-[10px] sm:text-xs font-mono font-bold border transition-all ${isCompleted
                         ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
                         : isCurrent
                           ? "bg-cyan-500/30 border-cyan-500 text-cyan-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
                           : "bg-black/40 border-cyan-500/30 text-cyan-500/50"
-                    }`}
+                      }`}
                   >
                     {qrNumber}
                   </div>
@@ -331,9 +285,9 @@ export default function Scan() {
 
               {/* Timeline - Desktop */}
               <div className="hidden md:block fixed left-4 top-1/2 -translate-y-1/2 z-30">
-                <ProgressTimeline 
-                  currentLevel={level} 
-                  totalLevels={GAME_CONFIG.TOTAL_LEVELS} 
+                <ProgressTimeline
+                  currentLevel={level}
+                  totalLevels={GAME_CONFIG.TOTAL_LEVELS}
                 />
               </div>
 
@@ -349,7 +303,25 @@ export default function Scan() {
                   </div>
                 </div>
 
-                {/* Active Hint (Intercepted Message) - Only shown AFTER scan */}
+                {/* Matched QR Indicator */}
+                {matchedQRInfo && matchedQRInfo.isCorrect && (
+                  <div className="w-full border border-green-500/50 bg-green-500/10 backdrop-blur-md p-4 sm:p-6 transition-all duration-300 animate-in fade-in zoom-in-95 shadow-[0_0_30px_rgba(34,197,94,0.3)]">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <div className="w-3 h-3 rounded-full animate-pulse bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                      <span className="text-sm sm:text-base font-orbitron font-bold tracking-widest uppercase text-green-400">
+                        ✓ SIGNAL MATCHED
+                      </span>
+                      <div className="w-3 h-3 rounded-full animate-pulse bg-green-500 shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <div className="text-4xl sm:text-5xl font-orbitron font-bold text-green-400 text-glow">
+                        QR {matchedQRInfo.qrNumber}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Hint - Only shown AFTER correct scan */}
                 {currentHint && (
                   <div className="w-full static-overlay border border-cyan-500/30 bg-black/40 backdrop-blur-md p-6 sm:p-8 hover:border-cyan-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                     <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -366,37 +338,41 @@ export default function Scan() {
 
                 {/* QR Scanner */}
                 <div className="w-full max-w-md mx-auto static-overlay border border-cyan-500/30 bg-black/40 backdrop-blur-md p-4">
-                  <QrScanner 
-                    qr={expectedQR} 
-                    setTrigger={handleCorrectQR}
+                  <QrScanner
+                    qr={expectedQR}
+                    setTrigger={() => { }}
                     onScanned={handleQRScan}
                     currentLevel={level}
                   />
                 </div>
 
-                {/* Hint History Boxes (Completed Levels Only) */}
-                {allHints.some(h => h.status === 'completed') && (
+                {/* Completed QRs Log */}
+                {level > 1 && (
                   <div className="w-full space-y-4">
                     <div className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500/50 uppercase mb-2 ml-1">
                       TRANSMISSION LOG
                     </div>
-                    {allHints
-                      .filter(h => h.status === 'completed') // Strictly show only completed hints
-                      .reverse()
-                      .map((hintObj) => { 
+                    {Array.from({ length: level - 1 }, (_, i) => {
+                      const qrNum = level - 1 - i // reverse order
+                      const qrKey = `qr${qrNum}`
                       return (
-                        <div 
-                          key={hintObj.level}
+                        <div
+                          key={qrKey}
                           className="w-full static-overlay border border-cyan-900/30 bg-black/40 backdrop-blur-md p-6 sm:p-8 opacity-70 hover:opacity-100 transition-all duration-300"
                         >
-                          <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-                            <span className="text-cyan-800 text-xs font-mono shrink-0">✓</span>
-                            <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-700 uppercase">
-                              Log Entry: Signal {hintObj.level}
+                          <div className="flex items-center justify-between mb-2 sm:mb-3">
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              <span className="text-cyan-800 text-xs font-mono shrink-0">✓</span>
+                              <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-700 uppercase">
+                                Log Entry: Signal {qrNum}
+                              </span>
+                            </div>
+                            <span className="text-[10px] sm:text-xs font-mono font-bold tracking-wider text-green-500/80 bg-green-500/10 border border-green-500/30 px-2 py-0.5 uppercase">
+                              ✓ {qrKey}
                             </span>
                           </div>
                           <p className="text-xs sm:text-sm md:text-base font-mono leading-relaxed tracking-wide text-gray-500">
-                             &quot;{hintObj.h}&quot;
+                            &quot;{QR_HINTS[qrKey]}&quot;
                           </p>
                         </div>
                       )
@@ -429,4 +405,3 @@ export default function Scan() {
     </div>
   )
 }
-

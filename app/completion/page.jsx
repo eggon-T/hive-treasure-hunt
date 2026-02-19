@@ -1,21 +1,46 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/firebase/auth"
+import { handleData } from "../functions"
 import Link from "next/link"
 import { StaticBackground } from "@/components/static-background"
-import { SignalScanner } from "@/components/signal-scanner"
+import { GAME_CONFIG } from "../game-config"
 
 export default function Completion() {
-  const [stats] = useState({
-    time: "12:34",
-    signals: 8,
-    rank: 3,
-  })
+  const User = useAuth()
+  const [timeTaken, setTimeTaken] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!User?.email) return
+      try {
+        const data = await handleData(User.email)
+        if (data?.timeTaken) {
+          setTimeTaken(data.timeTaken)
+        }
+      } catch (err) {
+        console.error("Error fetching completion data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [User])
+
+  // Format time: convert minutes to MM:SS
+  const formatTime = (minutes) => {
+    if (!minutes) return "--:--"
+    const totalSeconds = Math.round(minutes * 60)
+    const mins = Math.floor(totalSeconds / 60)
+    const secs = totalSeconds % 60
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`
+  }
 
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden">
       <StaticBackground />
-      <SignalScanner />
 
       <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
 
@@ -32,12 +57,24 @@ export default function Completion() {
           </div>
 
           <div className="static-overlay border border-[#dc2626]/30 bg-card/50 backdrop-blur-sm p-6 sm:p-8 space-y-6 hover:border-glow transition-all duration-300">
-            <div className="flex justify-center items-center">
+            <div className="flex justify-center items-center gap-12">
               <div className="space-y-2">
                 <div className="text-[10px] sm:text-xs font-mono text-muted-foreground tracking-widest uppercase">
                   Signals
                 </div>
-                <div className="text-2xl sm:text-3xl font-bold font-mono text-foreground">{stats.signals}</div>
+                <div className="text-2xl sm:text-3xl font-bold font-mono text-foreground">{GAME_CONFIG.TOTAL_LEVELS}</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-[10px] sm:text-xs font-mono text-muted-foreground tracking-widest uppercase">
+                  Time Taken
+                </div>
+                <div className="text-2xl sm:text-3xl font-bold font-mono text-foreground">
+                  {loading ? (
+                    <span className="inline-block w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+                  ) : (
+                    formatTime(timeTaken)
+                  )}
+                </div>
               </div>
             </div>
 

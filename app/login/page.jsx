@@ -5,7 +5,6 @@ import Link from "next/link"
 import { signInWithEmailAndPassword } from "firebase/auth"
 import { auth } from "@/firebase/config"
 import { StaticBackground } from "@/components/static-background"
-import { SignalScanner } from "@/components/signal-scanner"
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -31,7 +30,6 @@ export default function Login() {
   return (
     <div className="relative min-h-screen w-full bg-background overflow-hidden font-rajdhani">
       <StaticBackground />
-      <SignalScanner />
 
       <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
 

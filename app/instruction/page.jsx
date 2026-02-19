@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getData, shuffle } from "../functions";
+import { getData } from "../functions";
 import { useRouter } from "next/navigation";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/config";
@@ -9,10 +9,9 @@ import { useGlobalContext } from "../context";
 import Image from "next/image";
 import Loading from "@/components/loading";
 import { StaticBackground } from "@/components/static-background";
-import { SignalScanner } from "@/components/signal-scanner";
 import { GAME_CONFIG } from "../game-config";
 
-  const Instruction = () => {
+const Instruction = () => {
   const router = useRouter();
   const { load, setLoad } = useGlobalContext();
   const [buttonLoad, setButtonLoad] = useState(false);
@@ -21,28 +20,26 @@ import { GAME_CONFIG } from "../game-config";
 
   useEffect(() => {
     setLoad(true);
-    const checkUserPath = async () => {
-      const newpath = await getData("users", User.email);
+    const checkIfStarted = async () => {
+      const userData = await getData(GAME_CONFIG.COLLECTION.USERS, User.email);
 
-      if (newpath.path.length > 0) {  
+      if (userData && userData.startTime) {
+        // Game already started, go to scan page
         router.push("/scan");
       } else {
         setLoad(false);
       }
     };
     if (User) {
-      checkUserPath();
+      checkIfStarted();
     }
   }, [User]);
 
   const handleStart = async () => {
     setButtonLoad(true);
-    const path = shuffle(GAME_CONFIG.LEVEL_KEYS);
-    const array = path.split("");
-    const washingtonRef = doc(db, "users", User.email);
+    const washingtonRef = doc(db, GAME_CONFIG.COLLECTION.USERS, User.email);
     try {
       await updateDoc(washingtonRef, {
-        path: array,
         startTime: new Date(),
       });
       router.push("/scan");
@@ -53,15 +50,14 @@ import { GAME_CONFIG } from "../game-config";
     }
   };
 
-  if(load){
-    return <Loading/>
+  if (load) {
+    return <Loading />
   }
 
   if (User) {
     return (
       <div className="relative min-h-screen w-full bg-background overflow-hidden font-rajdhani">
         <StaticBackground />
-        <SignalScanner />
 
         <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
 
@@ -82,7 +78,7 @@ import { GAME_CONFIG } from "../game-config";
               <div className="w-full h-48 sm:h-64 bg-black/60 border-b border-cyan-500/30 flex items-center justify-center relative overflow-hidden">
                 <div className="relative z-10 text-center w-full h-full flex flex-col items-center justify-center p-4">
                   {/* Reuse wave image or replace if needed, applying cyan filter via CSS */}
-                   <div className="relative w-full h-full max-w-[300px] max-h-[200px]">
+                  <div className="relative w-full h-full max-w-[300px] max-h-[200px]">
                     <Image
                       src="/images/wave.png"
                       alt="Mission Handprint"

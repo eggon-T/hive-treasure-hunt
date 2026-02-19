@@ -3,13 +3,11 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight, Fingerprint, Scan, ShieldAlert } from 'lucide-react';
 import { StaticBackground } from '@/components/static-background';
-import { SignalScanner } from '@/components/signal-scanner';
 
 export default function Home() {
   return (
     <main className="relative min-h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-center">
       <StaticBackground />
-      <SignalScanner />
       
       {/* Background Gradients */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-black to-black opacity-80" />
