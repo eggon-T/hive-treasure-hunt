@@ -119,7 +119,8 @@ export default function Scan() {
         setTimeout(async () => {
           try {
             setProcessing(true)
-            await handleQuestionSubmit(User)
+            // PASS EXPECTED LEVEL INDEX (level - 1) for Security Validation
+            await handleQuestionSubmit(User, level - 1) 
             setCurrentHint("")
             await loadLevelData()
             setProcessing(false)

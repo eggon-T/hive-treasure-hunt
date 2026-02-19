@@ -20,17 +20,7 @@ const shuffle = (inputString) => {
     const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
-  // make the last path fixed
   return array.join("") + "h";
-};
-const FALLBACK_HINTS = {
-  a: "Where silence lives among knowledge infinite, Find the place where books illuminate minds.",
-  b: "Where minds recharge and conversations flow, Find the place where hunger disappears.",
-  c: "Where competition meets teamwork. Find the court where baskets decide victory.",
-  d: "Where the ball flies above the net. Find the court of spikes and serves.",
-  e: "Where protection and observation never rest. Find the room that guards everything.",
-  f: "The final destination stands tall and wide, Find the structure beneath the open sky.",
-  g: "The final destination stands tall and wide, Find the structure beneath the open sky.", // Fallback for g if needed
 };
 
 // To fetch hint from firebase based on pathway
@@ -85,10 +75,8 @@ const handleData = async (email) => {
     hintsToFetch.map(async (item) => {
       let data = await getData(GAME_CONFIG.COLLECTION.HINTS, item.c);
       if (!data) {
-        // Use fallback data if DB is empty
-        const fallbackText = FALLBACK_HINTS[item.c] || `[SIGNAL LOST]`;
         data = {
-          h: fallbackText,
+          h: `[SIGNAL LOST]`,
           qr: `placeholder-${item.c}`,
         };
       }
@@ -131,24 +119,43 @@ const handleQuestion = async (User) => {
     alert("Something went Wrong, Try Again!!");
   }
 };
+
 // To update firebase data if question is answered correctly
-const handleQuestionSubmit = async (User) => {
+const handleQuestionSubmit = async (User, expectedLevelIndex) => {
   const userData = await getData(GAME_CONFIG.COLLECTION.USERS, User.email);
   const newPath = userData.path;
-  for (let i = 0; i < GAME_CONFIG.TOTAL_LEVELS; i++) {
-    let c = newPath[i];
-    if (userData[c] === false) {
-      try {
-        const washingtonRef = doc(db, GAME_CONFIG.COLLECTION.USERS, User.email);
-        await updateDoc(washingtonRef, {
-          [c]: true,
-        });
-        return true;
-      } catch (err) {
-        alert(err.message);
-      }
-      break;
-    }
+  
+  // Strict Validation: Ensure we are updating the CORRECT level
+  // The 'expectedLevelIndex' must match the first 'false' entry in the path
+  // If they don't match, the user is trying to bypass levels.
+  
+  let currentLevelIndex = -1;
+  for(let i=0; i < GAME_CONFIG.TOTAL_LEVELS; i++) {
+     if(userData[newPath[i]] === false) {
+        currentLevelIndex = i;
+        break;
+     }
+  }
+
+  if (currentLevelIndex === -1) {
+    throw new Error("Game already completed or invalid state.");
+  }
+
+  if (expectedLevelIndex !== undefined && expectedLevelIndex !== currentLevelIndex) {
+     console.error(`Security Alert: User attempted to update level ${expectedLevelIndex} but is securely at level ${currentLevelIndex}`);
+     throw new Error("Security Violation: Level Mismatch Detected.");
+  }
+
+  const c = newPath[currentLevelIndex];
+
+  try {
+    const washingtonRef = doc(db, GAME_CONFIG.COLLECTION.USERS, User.email);
+    await updateDoc(washingtonRef, {
+      [c]: true,
+    });
+    return true;
+  } catch (err) {
+    alert(err.message);
   }
 };
 // to check the path of user
