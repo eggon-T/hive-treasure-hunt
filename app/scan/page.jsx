@@ -112,20 +112,22 @@ export default function Scan() {
       // Check if this is the correct QR for the current level
       const expectedQRNumber = String(level)
       if (matchedQR === expectedQRNumber) {
+        if (processing) return // Prevent multiple triggers
+        
         console.log("✅ Correct QR scanned! Advancing level automatically...")
-        setCurrentHint(matchedHint) // ONLY set hint if it matches the current level
+        setCurrentHint(matchedHint) 
+        setProcessing(true) // Lock immediately to prevent duplicate scans
 
         // Automatically advance to next level after a delay
         setTimeout(async () => {
           try {
-            setProcessing(true)
             // PASS EXPECTED LEVEL INDEX (level - 1) for Security Validation
             await handleQuestionSubmit(User, level - 1) 
             setCurrentHint("")
             await loadLevelData()
-            setProcessing(false)
           } catch (error) {
             alert(error.message || "Error processing scan")
+          } finally {
             setProcessing(false)
           }
         }, 4000) // 4 second delay to allow user to read the hint/confirmation
@@ -143,7 +145,7 @@ export default function Scan() {
       console.log("No match found, displaying scanned text")
       setCurrentHint(scannedText)
     }
-  }, [level, User, loadLevelData])
+  }, [level, User, loadLevelData, processing])
 
   // Handle correct QR match - advance to next level (used by QR scanner component)
   const handleCorrectQR = useCallback(async () => {
