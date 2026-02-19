@@ -371,12 +371,15 @@ export default function Scan() {
                 </div>
 
                 {/* Hint History Boxes (Completed Levels Only) */}
-                {allHints.length > 1 && (
+                {allHints.some(h => h.status === 'completed') && (
                   <div className="w-full space-y-4">
                     <div className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500/50 uppercase mb-2 ml-1">
                       TRANSMISSION LOG
                     </div>
-                    {allHints.slice(0, -1).reverse().map((hintObj) => { // Reverse to show newest history first
+                    {allHints
+                      .filter(h => h.status === 'completed') // Strictly show only completed hints
+                      .reverse()
+                      .map((hintObj) => { 
                       return (
                         <div 
                           key={hintObj.level}
