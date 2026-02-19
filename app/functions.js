@@ -70,6 +70,13 @@ const handleData = async (email) => {
     }
   }
 
+  // Check if we are at the final stage (all previous levels done, but final one pending)
+  if (currentLevelIndex === -1 && userData[newPath[GAME_CONFIG.TOTAL_LEVELS]] === false) {
+       let c = newPath[GAME_CONFIG.TOTAL_LEVELS];
+       hintsToFetch.push({ c, level: GAME_CONFIG.TOTAL_LEVELS + 1, status: 'active' });
+       currentLevelIndex = GAME_CONFIG.TOTAL_LEVELS;
+  }
+
   // Fetch hints in parallel
   const hintResults = await Promise.all(
     hintsToFetch.map(async (item) => {
@@ -135,6 +142,11 @@ const handleQuestionSubmit = async (User, expectedLevelIndex) => {
         currentLevelIndex = i;
         break;
      }
+  }
+  
+  // Check final level if all others are passed
+  if (currentLevelIndex === -1 && userData[newPath[GAME_CONFIG.TOTAL_LEVELS]] === false) {
+      currentLevelIndex = GAME_CONFIG.TOTAL_LEVELS;
   }
 
   if (currentLevelIndex === -1) {
