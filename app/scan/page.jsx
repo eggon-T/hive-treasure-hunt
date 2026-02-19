@@ -108,12 +108,13 @@ export default function Scan() {
     // Display the hint immediately
     if (matchedHint) {
       console.log("Matched QR", matchedQR, "Setting hint:", matchedHint)
-      setCurrentHint(matchedHint)
       
       // Check if this is the correct QR for the current level
       const expectedQRNumber = String(level)
       if (matchedQR === expectedQRNumber) {
         console.log("✅ Correct QR scanned! Advancing level automatically...")
+        setCurrentHint(matchedHint) // ONLY set hint if it matches the current level
+
         // Automatically advance to next level after a delay
         setTimeout(async () => {
           try {
