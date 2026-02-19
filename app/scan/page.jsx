@@ -19,9 +19,10 @@ export default function Scan() {
   const User = useAuth()
 
   const fetchData = async () => {
-    setLoad(true)
-    const obj = await handleData(User.email)
-    console.log(obj)
+    try {
+      setLoad(true)
+      const obj = await handleData(User.email)
+      console.log(obj)
 
       if (obj && !obj.StartTime) {
         setHint({
@@ -30,9 +31,13 @@ export default function Scan() {
           level: obj.level,
           userName: obj.userName,
         })
+      } else {
+        router.push("/completion")
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
       setLoad(false)
-    } else {
-      router.push("/completion")
     }
   }
 

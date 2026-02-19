@@ -7,12 +7,16 @@ export default function QrScanner({ qr, setTrigger }) {
   const [scanStatus, setScanStatus] = useState("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const scannerRef = useRef(null)
-  const isInitializedRef = useRef(false)
+  // Use a ref to store the current target QR code to avoid re-initializing the scanner when it changes
+  const qrTargetRef = useRef(qr)
 
   useEffect(() => {
-    if (isInitializedRef.current) return
+    qrTargetRef.current = qr
+  }, [qr])
 
-    isInitializedRef.current = true
+  useEffect(() => {
+    // Prevent double initialization
+    if (scannerRef.current) return
 
     const scanner = new Html5QrcodeScanner(
       "reader",
@@ -36,14 +40,12 @@ export default function QrScanner({ qr, setTrigger }) {
 
     scannerRef.current = scanner
 
-    scanner.render(success, error)
-    setScanStatus("scanning")
-
     function success(result) {
-      console.log("Scanned:", result, "Expected:", qr)
-      if (result === qr) {
+      console.log("Scanned:", result, "Expected:", qrTargetRef.current)
+      
+      if (result === qrTargetRef.current) {
         setScanStatus("success")
-        scanner.clear()
+        scanner.clear().catch(console.warn)
         setTrigger(true)
       } else {
         setScanStatus("error")
@@ -56,19 +58,30 @@ export default function QrScanner({ qr, setTrigger }) {
     }
 
     function error(err) {
-      if (err && !err.includes("NotFoundException")) {
+      if (err && (typeof err === "string" ? !err.includes("NotFoundException") : true)) {
         console.log(err)
       }
     }
 
+    try {
+        scanner.render(success, error)
+        setScanStatus("scanning")
+    } catch(e) {
+        console.error("Scanner render error:", e);
+        setErrorMessage("Camera initialization failed. Please prevent permission.");
+    }
+
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
+        try {
+            scannerRef.current.clear().catch(e => console.warn("Failed to clear scanner", e))
+        } catch(e) {
+            console.warn("Error clearing scanner", e)
+        }
         scannerRef.current = null
       }
-      isInitializedRef.current = false
     }
-  }, [qr, setTrigger])
+  }, [setTrigger])
 
   return (
     <div className="w-full max-w-2xl mx-auto">
