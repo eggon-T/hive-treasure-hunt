@@ -55,7 +55,21 @@ const handleData = async (email) => {
   for (let i = 0; i < 8; i++) {
     let c = newPath[i];
     if (userData[c] === false) {
+      console.log(`Checking path index ${i}, char ${c}`);
       const hint = await getData("hint", c);
+      console.log(`Fetched hint for ${c}:`, hint);
+      
+      if (!hint) {
+        console.error(`Hint document for '${c}' is missing or empty!`);
+        // Fallback to prevent crash
+        const placeholder = {
+          h: `[DATA MISSING: ${c}]`,
+          qr: `placeholder-${c}`,
+        };
+        const obj = { hint: placeholder, level: i + 1, userName: userData.name };
+        return obj;
+      }
+
       const obj = { hint: hint, level: i + 1, userName: userData.name };
       return obj;
     }

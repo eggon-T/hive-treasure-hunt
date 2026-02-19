@@ -2,6 +2,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { signInWithEmailAndPassword } from "firebase/auth"
+import { auth } from "@/firebase/config"
 import { StaticBackground } from "@/components/static-background"
 import { SignalScanner } from "@/components/signal-scanner"
 
@@ -17,15 +19,17 @@ export default function Login() {
     setLoading(true)
     setAttempts((prev) => prev + 1)
 
-    // Simulated authentication - replace with your Firebase auth
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
       router.push("/instruction")
-    }, 2000)
+    } catch (error) {
+       alert("Access Denied: Invalid Credentials") // Simple alert for now, can be improved
+       setLoading(false)
+    }
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-background overflow-hidden">
+    <div className="relative min-h-screen w-full bg-background overflow-hidden font-rajdhani">
       <StaticBackground />
       <SignalScanner />
 
@@ -35,29 +39,29 @@ export default function Login() {
         <div className="w-full max-w-md flex justify-between items-center mb-8 sm:mb-12">
           <Link
             href="/"
-            className="flex items-center gap-2 min-h-[44px] font-mono text-xs tracking-wider text-muted-foreground hover:text-foreground active:text-[#dc2626] transition-colors group"
+            className="flex items-center gap-2 min-h-[44px] font-mono text-xs tracking-wider text-muted-foreground hover:text-cyan-400 active:text-cyan-600 transition-colors group"
           >
-            <span className="text-[#dc2626] group-hover:text-glow-subtle transition-all duration-200">←</span>
+            <span className="text-cyan-500 group-hover:text-glow transition-all duration-200">←</span>
             <span>RETURN</span>
           </Link>
 
           <div className="font-mono text-[10px] sm:text-xs tracking-wider text-muted-foreground">
             <span className="hidden sm:inline">ACCESS ATTEMPTS: </span>
             <span className="sm:hidden">ATT: </span>
-            <span className="text-[#dc2626] signal-pulse">{attempts.toString().padStart(3, "0")}</span>
+            <span className="text-cyan-500 signal-pulse">{attempts.toString().padStart(3, "0")}</span>
           </div>
         </div>
 
         <div className="max-w-md w-full space-y-6 sm:space-y-8 fade-in-interference">
           <div className="text-center space-y-3 sm:space-y-4">
             <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6 animate-fade-in">
-              <div className="w-2 h-2 rounded-full bg-[#dc2626] signal-pulse shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
-              <h2 className="text-[10px] sm:text-xs font-mono tracking-widest text-[#dc2626] text-glow-subtle uppercase">
+              <div className="w-2 h-2 rounded-full bg-cyan-500 signal-pulse shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
+              <h2 className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500 text-glow uppercase">
                 Secure Terminal
               </h2>
-              <div className="w-2 h-2 rounded-full bg-[#dc2626] signal-pulse shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+              <div className="w-2 h-2 rounded-full bg-cyan-500 signal-pulse shadow-[0_0_10px_rgba(6,182,212,0.8)]" />
             </div>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl title-font">
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-orbitron font-bold text-white">
               ACCESS
             </h1>
             <p className="text-xs sm:text-sm font-mono text-muted-foreground tracking-wide">
@@ -66,12 +70,12 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
-            <div className="static-overlay border border-[#dc2626]/30 p-6 sm:p-8 bg-card/50 backdrop-blur-sm space-y-5 sm:space-y-6 hover:border-glow-dim transition-all duration-300">
+            <div className="static-overlay border border-cyan-500/30 p-6 sm:p-8 bg-black/40 backdrop-blur-md space-y-5 sm:space-y-6 hover:border-cyan-500/50 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.1)]">
               {/* Email field */}
               <div className="space-y-2">
                 <label
                   htmlFor="email"
-                  className="input-label"
+                  className="input-label text-cyan-400/70"
                 >
                   User ID
                 </label>
@@ -81,11 +85,9 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="input"
-                  placeholder="user@system.net"
+                  className="input border-cyan-900 focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.3)] text-white"
+                  placeholder="user@hyve.net"
                   autoComplete="email"
-                  onFocus={(e) => e.target.previousSibling.classList.add('focused')}
-                  onBlur={(e) => e.target.previousSibling.classList.remove('focused')}
                 />
               </div>
 
@@ -93,7 +95,7 @@ export default function Login() {
               <div className="space-y-2">
                 <label
                   htmlFor="password"
-                  className="input-label"
+                  className="input-label text-cyan-400/70"
                 >
                   Access Code
                 </label>
@@ -103,18 +105,16 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="input"
+                  className="input border-cyan-900 focus:border-cyan-500 focus:shadow-[0_0_10px_rgba(6,182,212,0.3)] text-white"
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  onFocus={(e) => e.target.previousSibling.classList.add('focused')}
-                  onBlur={(e) => e.target.previousSibling.classList.remove('focused')}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full min-h-[48px] sm:min-h-[52px] p-4 bg-[#dc2626] text-white font-mono text-sm tracking-widest uppercase border border-[#dc2626] hover:bg-[#dc2626]/90 active:scale-[0.98] transition-all duration-200 border-glow disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                className="w-full min-h-[48px] sm:min-h-[52px] p-4 bg-cyan-600 text-white font-orbitron font-bold text-sm tracking-widest uppercase border border-cyan-400 hover:bg-cyan-500 active:scale-[0.98] transition-all duration-200 shadow-[0_0_20px_rgba(6,182,212,0.2)] disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -133,17 +133,17 @@ export default function Login() {
             <div className="text-center">
               <Link
                 href="/signup"
-                className="inline-block min-h-[44px] flex items-center justify-center text-xs font-mono tracking-wide text-muted-foreground hover:text-[#dc2626] active:text-[#dc2626] transition-colors"
+                className="inline-block min-h-[44px] flex items-center justify-center text-xs font-mono tracking-wide text-gray-400 hover:text-cyan-400 active:text-cyan-600 transition-colors"
               >
-                <span className="text-[#dc2626]">[</span> Request new credentials{" "}
-                <span className="text-[#dc2626]">]</span>
+                <span className="text-cyan-500">[</span> Request new credentials{" "}
+                <span className="text-cyan-500">]</span>
               </Link>
             </div>
           </form>
 
           {/* Security notice */}
           <div className="pt-2 sm:pt-4 text-center animate-fade-in">
-            <p className="text-[10px] font-mono text-muted-foreground/60 tracking-wide leading-relaxed">
+            <p className="text-[10px] font-mono text-cyan-900/60 tracking-wide leading-relaxed uppercase">
               All access is monitored and logged.
               <br />
               Unauthorized attempts will be traced.

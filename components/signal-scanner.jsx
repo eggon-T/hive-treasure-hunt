@@ -14,13 +14,13 @@ export function SignalScanner() {
   }, [])
 
   return (
-    <div className="fixed top-0 left-0 w-full h-1 pointer-events-none z-9996">
+    <div className="fixed top-0 left-0 w-full h-1 pointer-events-none z-[9996]">
       <div
-        className={`h-full bg-linear-to-r from-transparent via-[#dc2626] to-transparent transition-transform duration-3000 ease-linear ${
+        className={`h-full bg-gradient-to-r from-transparent via-cyan-500 to-transparent transition-transform duration-[3000ms] ease-linear ${
           scanning ? "translate-y-[100vh]" : "translate-y-0"
         }`}
         style={{
-          boxShadow: "0 0 20px #dc2626, 0 0 40px #dc2626",
+          boxShadow: "0 0 20px #06b6d4, 0 0 40px #06b6d4",
           opacity: 0.3,
         }}
       />

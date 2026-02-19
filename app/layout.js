@@ -1,18 +1,29 @@
-import { Inter } from 'next/font/google'
+import { Orbitron, Rajdhani } from 'next/font/google'
 import './globals.css'
 import { UserDetails } from './context'
 
-const inter = Inter({ subsets: ['latin'] })
+const orbitron = Orbitron({ 
+  subsets: ['latin'],
+  variable: '--font-orbitron',
+  display: 'swap',
+})
+
+const rajdhani = Rajdhani({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-rajdhani',
+  display: 'swap',
+})
 
 export const metadata = {
-  title: 'Treasure Hunt',
-  description: 'Qr treasure hunt for protek 2023',
+  title: 'HYVE SEASON 1 | Tech Fest',
+  description: 'The ultimate tech fest experience.',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${orbitron.variable} ${rajdhani.variable} antialiased`}>
         <UserDetails>
           {children}
         </UserDetails>

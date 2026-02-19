@@ -28,10 +28,11 @@ export function StaticBackground() {
 
       for (let i = 0; i < data.length; i += 4) {
         const value = Math.random() * 255
-        data[i] = value // Red
+        // Cyan-ish static noise (Red=0, Green=High, Blue=High)
+        data[i] = 0 // Red
         data[i + 1] = value // Green
         data[i + 2] = value // Blue
-        data[i + 3] = 3 // Alpha (very transparent)
+        data[i + 3] = 5 // Alpha (very transparent)
       }
 
       ctx.putImageData(imageData, 0, 0)
@@ -47,6 +48,6 @@ export function StaticBackground() {
   }, [])
 
   return (
-    <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-9997 opacity-[0.015]" aria-hidden="true" />
+    <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-[9997] opacity-[0.03]" aria-hidden="true" />
   )
 }

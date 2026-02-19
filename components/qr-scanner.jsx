@@ -40,6 +40,7 @@ export default function QrScanner({ qr, setTrigger }) {
     setScanStatus("scanning")
 
     function success(result) {
+      console.log("Scanned:", result, "Expected:", qr)
       if (result === qr) {
         setScanStatus("success")
         scanner.clear()
@@ -77,8 +78,8 @@ export default function QrScanner({ qr, setTrigger }) {
             scanStatus === "success"
               ? "bg-green-500 animate-ping"
               : scanStatus === "error"
-                ? "bg-red-600 animate-pulse"
-                : "bg-[#dc2626] signal-pulse"
+                ? "bg-fuchsia-600 animate-pulse"
+                : "bg-cyan-500 signal-pulse"
           }`}
         />
         <span
@@ -86,14 +87,14 @@ export default function QrScanner({ qr, setTrigger }) {
             scanStatus === "success"
               ? "text-green-500"
               : scanStatus === "error"
-                ? "text-red-600"
-                : "text-[#dc2626] text-glow-subtle"
+                ? "text-fuchsia-500 text-glow-purple"
+                : "text-cyan-500 text-glow"
           }`}
         >
           {scanStatus === "success"
             ? "Signal locked"
             : scanStatus === "error"
-              ? "Invalid signal"
+              ? "System Error"
               : "Scanning for signal"}
         </span>
         <div
@@ -101,20 +102,23 @@ export default function QrScanner({ qr, setTrigger }) {
             scanStatus === "success"
               ? "bg-green-500 animate-ping"
               : scanStatus === "error"
-                ? "bg-red-600 animate-pulse"
-                : "bg-[#dc2626] signal-pulse"
+                ? "bg-fuchsia-600 animate-pulse"
+                : "bg-cyan-500 signal-pulse"
           }`}
         />
       </div>
 
       {errorMessage && (
-        <div className="mb-4 p-3 bg-red-950/30 border border-red-600/50 rounded text-center">
-          <p className="text-xs font-mono text-red-500">{errorMessage}</p>
+        <div className="mb-4 p-3 bg-fuchsia-950/30 border border-fuchsia-500/50 rounded-none text-center shadow-[0_0_15px_rgba(192,38,211,0.2)]">
+          <p className="text-xs font-mono text-fuchsia-400 tracking-wide">
+            <span className="mr-2">⚠</span>
+            {errorMessage}
+          </p>
         </div>
       )}
 
-      <div className="mb-4 p-3 bg-background/50 border border-border rounded backdrop-blur-sm">
-        <p className="text-xs font-mono text-foreground/70 text-center">
+      <div className="mb-4 p-3 bg-background/50 border border-cyan-500/30 rounded backdrop-blur-sm">
+        <p className="text-xs font-mono text-cyan-400/80 text-center">
           Position the QR code within the scanning area. Use flashlight for dark areas.
         </p>
       </div>
@@ -122,15 +126,15 @@ export default function QrScanner({ qr, setTrigger }) {
       <div
         id="reader"
         className="flex flex-col gap-2 items-center justify-center font-mono p-4 
-        [&_video]:rounded-lg [&_video]:border-2 [&_video]:border-[#dc2626]/50
-        [&_button]:!bg-[#dc2626] [&_button]:!border-[#dc2626] [&_button]:!text-white 
+        [&_video]:rounded-lg [&_video]:border-2 [&_video]:border-cyan-500/50
+        [&_button]:!bg-cyan-600 [&_button]:!border-cyan-500 [&_button]:!text-white 
         [&_button]:!font-mono [&_button]:!text-xs [&_button]:!px-4 [&_button]:!py-2 
-        [&_button]:!rounded [&_button]:!min-h-[48px] [&_button]:hover:!bg-[#b91c1c]
-        [&_button]:active:!scale-95 [&_button]:!transition-all
-        [&_select]:!bg-background [&_select]:!text-foreground [&_select]:!border-border 
+        [&_button]:!rounded-none [&_button]:!min-h-[48px] [&_button]:hover:!bg-cyan-500
+        [&_button]:active:!scale-95 [&_button]:!transition-all [&_button]:!shadow-[0_0_15px_rgba(6,182,212,0.3)]
+        [&_select]:!bg-black [&_select]:!text-cyan-500 [&_select]:!border-cyan-900 
         [&_select]:!font-mono [&_select]:!text-xs [&_select]:!px-3 [&_select]:!py-2
-        [&_select]:!rounded [&_select]:!min-h-[48px]
-        [&_input[type='range']]:!accent-[#dc2626]
+        [&_select]:!rounded-none [&_select]:!min-h-[48px]
+        [&_input[type='range']]:!accent-cyan-500
         max-w-full overflow-hidden"
       />
     </div>

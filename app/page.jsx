@@ -1,105 +1,106 @@
-"use client"
-
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { StaticBackground } from "@/components/static-background"
-import { SignalScanner } from "@/components/signal-scanner"
+'use client';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowRight, Fingerprint, Scan, ShieldAlert } from 'lucide-react';
+import { StaticBackground } from '@/components/static-background';
+import { SignalScanner } from '@/components/signal-scanner';
 
 export default function Home() {
-  const [loaded, setLoaded] = useState(false)
-  const [flicker, setFlicker] = useState(false)
-
-  useEffect(() => {
-    setLoaded(true)
-
-    // Random flicker effect
-    const flickerInterval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        setFlicker(true)
-        setTimeout(() => setFlicker(false), 100)
-      }
-    }, 3000)
-
-    return () => clearInterval(flickerInterval)
-  }, [])
-
   return (
-    <div className="relative min-h-screen w-full bg-background overflow-hidden">
+    <main className="relative min-h-screen w-full bg-black overflow-hidden flex flex-col items-center justify-center">
       <StaticBackground />
       <SignalScanner />
+      
+      {/* Background Gradients */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-900/10 via-black to-black opacity-80" />
+      <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:30px_30px]" />
 
-      {/* Vignette effect */}
-      <div className="fixed inset-0 pointer-events-none z-10 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
-
-      <div
-        className={`relative z-20 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 transition-opacity duration-1000 ${loaded ? "opacity-100" : "opacity-0"} ${flicker ? "opacity-60" : ""}`}
-      >
-        {/* Main content */}
-        <div className="max-w-2xl w-full space-y-6 sm:space-y-8 fade-in-interference">
-          <div className="text-center space-y-3 sm:space-y-4 mb-8 sm:mb-12">
-            <div className="relative w-full flex justify-center">
-              <div className="relative w-64 h-32 sm:w-80 sm:h-40 md:w-96 md:h-48">
-                <Image
-                  src="/images/logo.png"
-                  alt="Signal Logo"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </div>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-mono tracking-wider text-foreground/70 uppercase animate-fade-in-up">
-              Trace the Hidden Path
-            </h2>
+      <div className="relative z-10 w-full max-w-5xl px-4 text-center">
+        <motion.div
+           initial={{ opacity: 0, y: -20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ duration: 0.8 }}
+           className="mb-8"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 backdrop-blur-md mb-6">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+            </span>
+            <span className="text-cyan-400 text-xs font-mono tracking-widest uppercase">System Online</span>
           </div>
+          
+          <h1 className="text-5xl md:text-7xl lg:text-9xl font-bold font-orbitron tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-cyan-100 to-cyan-900 drop-shadow-[0_0_30px_rgba(6,182,212,0.3)] mb-2">
+            HYVE
+          </h1>
+          <h2 className="text-2xl md:text-4xl font-light font-rajdhani text-cyan-500 tracking-[0.5em] uppercase text-glow">
+            Treasure Hunt
+          </h2>
+        </motion.div>
 
-          <div className="static-overlay border border-[#dc2626]/30 p-6 sm:p-8 bg-card/50 backdrop-blur-sm border-glow-dim hover:border-glow transition-all duration-300">
-            <p className="text-sm sm:text-base font-mono leading-relaxed sm:leading-relaxed text-foreground/80 tracking-wide">
-              <span className="text-[#dc2626]">[CLASSIFIED]</span> Something is transmitting from multiple locations.
-              Each signal contains fragments of a larger message. Your device has been configured to detect these
-              transmissions. Follow the coordinates. Scan the sources. Piece together what's hidden.
-            </p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="text-gray-400 font-rajdhani text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
+        >
+          Decipher the code. Follow the signal. <br />
+          The ultimate test of logic and exploration awaits.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-6"
+        >
+          <Link 
+            href="/login"
+            className="group relative px-8 py-4 bg-cyan-600 text-white font-orbitron font-bold tracking-wider hover:bg-cyan-500 transition-all duration-300 clip-path-polygon shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_40px_rgba(6,182,212,0.6)]"
+          >
+            ENTER THE HUNT
+            <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          
+          <Link
+            href="/instruction" 
+            className="px-8 py-4 border border-cyan-500/30 text-cyan-400 font-orbitron font-bold tracking-wider hover:bg-cyan-500/10 transition-all duration-300 backdrop-blur-sm"
+          >
+            MISSION BRIEF
+          </Link>
+        </motion.div>
+
+        {/* Feature Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 text-left"
+        >
+          <div className="p-6 border border-cyan-900/30 bg-black/40 backdrop-blur hover:border-cyan-500/50 transition-colors group">
+            <Scan className="w-8 h-8 text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+            <h3 className="text-white font-orbitron text-lg mb-2">Scan & Decode</h3>
+            <p className="text-gray-400 text-sm font-rajdhani">Locate hidden QR codes across the sector. Intercept the transmission.</p>
           </div>
-
-          <div className="space-y-4">
-            <Link href="/login" className="block">
-              <button className="w-full min-h-[48px] sm:min-h-[56px] p-4 bg-[#dc2626] text-white font-mono text-base sm:text-lg tracking-widest uppercase border border-[#dc2626] hover:bg-[#dc2626]/90 active:scale-[0.98] transition-all duration-200 border-glow relative overflow-hidden group">
-                <span className="relative z-10">ACCESS SYSTEM</span>
-                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 group-active:translate-y-0 transition-transform duration-300" />
-              </button>
-            </Link>
-
-            <div className="flex items-center gap-4 px-4 py-2">
-              <div className="flex-1 h-px bg-border animate-expand-horizontal" />
-              <span className="text-xs font-mono text-muted-foreground tracking-widest">OR</span>
-              <div className="flex-1 h-px bg-border animate-expand-horizontal" />
-            </div>
-
-            <Link href="/signup" className="block">
-              <button className="w-full min-h-[48px] sm:min-h-[56px] p-4 bg-transparent text-foreground font-mono text-base sm:text-lg tracking-widest uppercase border border-foreground/30 hover:border-foreground/60 hover:bg-foreground/5 active:scale-[0.98] transition-all duration-200 relative overflow-hidden group">
-                <span className="relative z-10">NEW REGISTRATION</span>
-                <div className="absolute inset-0 bg-foreground/5 translate-x-full group-hover:translate-x-0 group-active:translate-x-0 transition-transform duration-300" />
-              </button>
-            </Link>
+          <div className="p-6 border border-cyan-900/30 bg-black/40 backdrop-blur hover:border-cyan-500/50 transition-colors group">
+            <Fingerprint className="w-8 h-8 text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+            <h3 className="text-white font-orbitron text-lg mb-2">Secure Access</h3>
+            <p className="text-gray-400 text-sm font-rajdhani">Login with your operative credentials to track your progress.</p>
           </div>
-
-          <div className="pt-6 sm:pt-8 space-y-2 font-mono text-[10px] sm:text-xs text-muted-foreground tracking-wider animate-fade-in-up">
-            <div className="flex justify-between items-center">
-              <span>SYSTEM STATUS:</span>
-              <span className="text-[#dc2626] signal-pulse">OPERATIONAL</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>ENCRYPTION:</span>
-              <span>AES-256</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span>LOCATION:</span>
-              <span className="flicker">████████</span>
-            </div>
+          <div className="p-6 border border-cyan-900/30 bg-black/40 backdrop-blur hover:border-cyan-500/50 transition-colors group">
+            <ShieldAlert className="w-8 h-8 text-cyan-500 mb-4 group-hover:scale-110 transition-transform" />
+            <h3 className="text-white font-orbitron text-lg mb-2">Race Against Time</h3>
+            <p className="text-gray-400 text-sm font-rajdhani">Compete against other squads. Speed is your only ally.</p>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
-  )
+
+      {/* Footer */}
+      <div className="absolute bottom-4 left-0 w-full text-center">
+        <p className="text-[10px] font-mono text-cyan-900 uppercase tracking-widest">
+          System v2.0.4 | Secure Connection Established
+        </p>
+      </div>
+    </main>
+  );
 }
