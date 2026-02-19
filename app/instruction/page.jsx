@@ -10,8 +10,9 @@ import Image from "next/image";
 import Loading from "@/components/loading";
 import { StaticBackground } from "@/components/static-background";
 import { SignalScanner } from "@/components/signal-scanner";
+import { GAME_CONFIG } from "../game-config";
 
-const Instruction = () => {
+  const Instruction = () => {
   const router = useRouter();
   const { load, setLoad } = useGlobalContext();
   const [buttonLoad, setButtonLoad] = useState(false);
@@ -36,7 +37,7 @@ const Instruction = () => {
 
   const handleStart = async () => {
     setButtonLoad(true);
-    const path = shuffle("abcdefg");
+    const path = shuffle(GAME_CONFIG.LEVEL_KEYS);
     const array = path.split("");
     const washingtonRef = doc(db, "users", User.email);
     try {

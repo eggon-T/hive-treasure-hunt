@@ -1,5 +1,6 @@
 import { db } from "@/firebase/config";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { GAME_CONFIG } from "./game-config";
 
 // To collect data from a document
 const getData = async (collection, document) => {
@@ -22,16 +23,28 @@ const shuffle = (inputString) => {
   // make the last path fixed
   return array.join("") + "h";
 };
+const FALLBACK_HINTS = {
+  a: "Where silence lives among knowledge infinite, Find the place where books illuminate minds.",
+  b: "Where minds recharge and conversations flow, Find the place where hunger disappears.",
+  c: "Where competition meets teamwork. Find the court where baskets decide victory.",
+  d: "Where the ball flies above the net. Find the court of spikes and serves.",
+  e: "Where protection and observation never rest. Find the room that guards everything.",
+  f: "The final destination stands tall and wide, Find the structure beneath the open sky.",
+  g: "The final destination stands tall and wide, Find the structure beneath the open sky.", // Fallback for g if needed
+};
+
 // To fetch hint from firebase based on pathway
 const handleData = async (email) => {
   // const hint = await getData("Questions", "hint");
-  const userData = await getData("users", email);
+  const userData = await getData(GAME_CONFIG.COLLECTION.USERS, email);
+  if (!userData) return null;
+
   const newPath = userData.path;
 
   // If user completed the game, then goto completion page and obtain completion time
-  if (userData[newPath[7]] === true) {
+  if (userData[newPath[GAME_CONFIG.TOTAL_LEVELS]] === true) {
     try {
-      const washingtonRef = doc(db, "users", email);
+      const washingtonRef = doc(db, GAME_CONFIG.COLLECTION.USERS, email);
       const endTime = new Date().getTime();
       const startTime = userData.startTime.seconds;
       const totalTime = endTime / 1000 - startTime;
@@ -51,40 +64,60 @@ const handleData = async (email) => {
       return { hint: "Not available", level: "Cant find" };
     }
   }
-  // To find the current pathway level and the particular hint
-  for (let i = 0; i < 8; i++) {
-    let c = newPath[i];
-    if (userData[c] === false) {
-      console.log(`Checking path index ${i}, char ${c}`);
-      const hint = await getData("hint", c);
-      console.log(`Fetched hint for ${c}:`, hint);
-      
-      if (!hint) {
-        console.error(`Hint document for '${c}' is missing or empty!`);
-        // Fallback to prevent crash
-        const placeholder = {
-          h: `[DATA MISSING: ${c}]`,
-          qr: `placeholder-${c}`,
-        };
-        const obj = { hint: placeholder, level: i + 1, userName: userData.name };
-        return obj;
-      }
 
-      const obj = { hint: hint, level: i + 1, userName: userData.name };
-      return obj;
+  // Collect all hints up to current level
+  const hintsToFetch = [];
+  let currentLevelIndex = -1;
+
+  for (let i = 0; i < GAME_CONFIG.TOTAL_LEVELS; i++) {
+    let c = newPath[i];
+    if (userData[c] === true) {
+        hintsToFetch.push({ c, level: i + 1, status: 'completed' });
+    } else if (userData[c] === false) {
+        hintsToFetch.push({ c, level: i + 1, status: 'active' });
+        currentLevelIndex = i;
+        break; // Stop at current level
     }
+  }
+
+  // Fetch hints in parallel
+  const hintResults = await Promise.all(
+    hintsToFetch.map(async (item) => {
+      let data = await getData(GAME_CONFIG.COLLECTION.HINTS, item.c);
+      if (!data) {
+        // Use fallback data if DB is empty
+        const fallbackText = FALLBACK_HINTS[item.c] || `[SIGNAL LOST]`;
+        data = {
+          h: fallbackText,
+          qr: `placeholder-${item.c}`,
+        };
+      }
+      return { ...data, ...item };
+    })
+  );
+
+  if (currentLevelIndex !== -1) {
+    const currentHintObj = hintResults[hintResults.length - 1];
+    const obj = { 
+      hint: currentHintObj, 
+      allHints: hintResults, 
+      level: currentLevelIndex + 1, 
+      userName: userData.name, 
+      path: newPath 
+    };
+    return obj;
   }
 };
 
 // To fetch random question for the particular path
 const handleQuestion = async (User) => {
   try {
-    const userData = await getData("users", User.email);
+    const userData = await getData(GAME_CONFIG.COLLECTION.USERS, User.email);
     const newPath = userData.path;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 10; i++) { // Keep 10 or update if questions follow different logic
       let c = newPath[i];
       if (userData[c] === false) {
-        const question = await getData("Questions", c);
+        const question = await getData(GAME_CONFIG.COLLECTION.QUESTIONS, c);
         const randomIndex = Math.floor(Math.random() * 3) + 1;
         const obj = {
           question: question[randomIndex],
@@ -100,13 +133,13 @@ const handleQuestion = async (User) => {
 };
 // To update firebase data if question is answered correctly
 const handleQuestionSubmit = async (User) => {
-  const userData = await getData("users", User.email);
+  const userData = await getData(GAME_CONFIG.COLLECTION.USERS, User.email);
   const newPath = userData.path;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < GAME_CONFIG.TOTAL_LEVELS; i++) {
     let c = newPath[i];
     if (userData[c] === false) {
       try {
-        const washingtonRef = doc(db, "users", User.email);
+        const washingtonRef = doc(db, GAME_CONFIG.COLLECTION.USERS, User.email);
         await updateDoc(washingtonRef, {
           [c]: true,
         });
@@ -120,8 +153,8 @@ const handleQuestionSubmit = async (User) => {
 };
 // to check the path of user
 const checkUserPath = async (email) => {
-  const newpath = await getData("users", email);
-  if (newpath.path.length > 0) {
+  const newpath = await getData(GAME_CONFIG.COLLECTION.USERS, email);
+  if (newpath && newpath.path && newpath.path.length > 0) {
     return true;
   } else {
     return false;

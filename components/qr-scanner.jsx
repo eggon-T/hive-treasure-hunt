@@ -3,57 +3,71 @@
 import { Html5QrcodeScanner } from "html5-qrcode"
 import { useEffect, useRef, useState } from "react"
 
-export default function QrScanner({ qr, setTrigger }) {
+export default function QrScanner({ qr, setTrigger, onScanned, currentLevel }) {
   const [scanStatus, setScanStatus] = useState("idle")
   const [errorMessage, setErrorMessage] = useState("")
   const scannerRef = useRef(null)
-  // Use a ref to store the current target QR code to avoid re-initializing the scanner when it changes
   const qrTargetRef = useRef(qr)
+  const onScannedRef = useRef(onScanned)
 
+  // Update refs when props change
   useEffect(() => {
     qrTargetRef.current = qr
   }, [qr])
 
   useEffect(() => {
-    // Prevent double initialization
-    if (scannerRef.current) return
+    onScannedRef.current = onScanned
+  }, [onScanned])
+
+  // Initialize scanner - only once on mount
+  useEffect(() => {
+    if (scannerRef.current) {
+      return
+    }
 
     const scanner = new Html5QrcodeScanner(
       "reader",
       {
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
+        qrbox: { width: 250, height: 250 },
         fps: 10,
         aspectRatio: 1.0,
         disableFlip: false,
-        rememberLastUsedCamera: true,
-        showTorchButtonIfSupported: true,
-        showZoomSliderIfSupported: true,
-        videoConstraints: {
-          facingMode: { ideal: "environment" },
-        },
+        videoConstraints: { facingMode: "environment" },
       },
-      false,
+      false
     )
 
     scannerRef.current = scanner
 
     function success(result) {
-      console.log("Scanned:", result, "Expected:", qrTargetRef.current)
+      console.log("Scanned:", result, "Expected:", qrTargetRef.current, "Current Level:", currentLevel)
       
-      if (result === qrTargetRef.current) {
-        setScanStatus("success")
-        scanner.clear().catch(console.warn)
-        setTrigger(true)
-      } else {
-        setScanStatus("error")
-        setErrorMessage("Invalid signal detected. Try another transmission.")
-        setTimeout(() => {
+      // IMMEDIATELY call the callback with scanned text - this will update the hint
+      if (onScannedRef.current && typeof onScannedRef.current === 'function') {
+        console.log("Calling onScanned callback with:", result)
+        onScannedRef.current(result)
+      }
+      
+      // The parent component (handleQRScan) will handle matching and advancement
+      // We just need to check if it's a valid QR format
+      const scannedLower = result.toLowerCase().trim()
+      const hasQRNumber = scannedLower.match(/(?:qr|clue)(\d+)/)
+      
+      // If it has a QR number, check if it matches current level
+      if (hasQRNumber) {
+        const scannedNumber = hasQRNumber[1]
+        const expectedNumber = String(currentLevel || 1)
+        
+        if (scannedNumber === expectedNumber) {
+          setScanStatus("success")
+          // Don't clear scanner here - let parent handle advancement
+          // scanner.clear().catch(console.warn)
+        } else {
           setScanStatus("scanning")
-          setErrorMessage("")
-        }, 3000)
+        }
+      } else {
+        // If it's hint text, let parent component handle it
+        setScanStatus("scanning")
       }
     }
 
@@ -64,27 +78,29 @@ export default function QrScanner({ qr, setTrigger }) {
     }
 
     try {
-        scanner.render(success, error)
-        setScanStatus("scanning")
-    } catch(e) {
-        console.error("Scanner render error:", e);
-        setErrorMessage("Camera initialization failed. Please prevent permission.");
+      scanner.render(success, error)
+      setScanStatus("scanning")
+    } catch (e) {
+      console.error("Scanner render error:", e)
+      setErrorMessage("Camera initialization failed. Please check permissions.")
     }
 
     return () => {
       if (scannerRef.current) {
         try {
-            scannerRef.current.clear().catch(e => console.warn("Failed to clear scanner", e))
-        } catch(e) {
-            console.warn("Error clearing scanner", e)
+          scannerRef.current.clear().catch(e => console.warn("Failed to clear scanner", e))
+        } catch (e) {
+          console.warn("Error clearing scanner", e)
         }
         scannerRef.current = null
       }
     }
-  }, [setTrigger])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
 
   return (
     <div className="w-full max-w-2xl mx-auto">
+      {/* Status Indicator */}
       <div className="flex items-center justify-center gap-2 mb-4">
         <div
           className={`w-2 h-2 rounded-full transition-all duration-300 ${
@@ -121,7 +137,8 @@ export default function QrScanner({ qr, setTrigger }) {
         />
       </div>
 
-      {errorMessage && (
+      {/* Error Message - Only show for actual errors, not wrong QR codes */}
+      {errorMessage && errorMessage.includes("Camera") && (
         <div className="mb-4 p-3 bg-fuchsia-950/30 border border-fuchsia-500/50 rounded-none text-center shadow-[0_0_15px_rgba(192,38,211,0.2)]">
           <p className="text-xs font-mono text-fuchsia-400 tracking-wide">
             <span className="mr-2">⚠</span>
@@ -130,12 +147,14 @@ export default function QrScanner({ qr, setTrigger }) {
         </div>
       )}
 
+      {/* Instructions */}
       <div className="mb-4 p-3 bg-background/50 border border-cyan-500/30 rounded backdrop-blur-sm">
         <p className="text-xs font-mono text-cyan-400/80 text-center">
           Position the QR code within the scanning area. Use flashlight for dark areas.
         </p>
       </div>
 
+      {/* Scanner Container */}
       <div
         id="reader"
         className="flex flex-col gap-2 items-center justify-center font-mono p-4 
