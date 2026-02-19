@@ -350,7 +350,21 @@ export default function Scan() {
                   </div>
                 </div>
 
-                {/* Intercepted Message */}
+                {/* Active Hint (Intercepted Message) */}
+                {allHints.length > 0 && (
+                  <div className="w-full static-overlay border border-cyan-500/30 bg-black/40 backdrop-blur-md p-6 sm:p-8 hover:border-cyan-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                      <span className="text-cyan-500 text-xs font-mono shrink-0 flicker">◉</span>
+                      <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500 text-glow uppercase">
+                        Incoming Transmission
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm md:text-base font-mono leading-relaxed text-gray-200 tracking-wide">
+                      &quot;{currentHint}&quot;
+                    </p>
+                  </div>
+                )}
+
                 {/* QR Scanner */}
                 <div className="w-full max-w-md mx-auto static-overlay border border-cyan-500/30 bg-black/40 backdrop-blur-md p-4">
                   <QrScanner 
@@ -361,41 +375,32 @@ export default function Scan() {
                   />
                 </div>
 
-                {/* Hint History Boxes */}
-                <div className="w-full space-y-4">
-                  {allHints.map((hintObj, index) => {
-                    const isLast = index === allHints.length - 1;
-                    // Use currentHint state for the active level to allow immediate scanner feedback
-                    const displayText = isLast ? currentHint : hintObj.h;
-                    
-                    return (
-                      <div 
-                        key={hintObj.level}
-                        className={`w-full static-overlay border backdrop-blur-md p-6 sm:p-8 transition-all duration-300 ${
-                          isLast 
-                            ? "border-cyan-500/50 bg-black/60 shadow-[0_0_20px_rgba(6,182,212,0.15)] scale-100" 
-                            : "border-cyan-900/30 bg-black/40 opacity-70 hover:opacity-100 scale-95 origin-top"
-                        }`}
-                      >
-                        <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
-                          <span className={`${isLast ? "text-cyan-500 flicker" : "text-cyan-800"} text-xs font-mono shrink-0`}>
-                            {isLast ? "◉" : "✓"}
-                          </span>
-                          <span className={`text-[10px] sm:text-xs font-mono tracking-widest uppercase ${
-                            isLast ? "text-cyan-500 text-glow" : "text-cyan-700"
-                          }`}>
-                            {isLast ? "Incoming Transmission" : `Log Entry: Signal ${hintObj.level}`}
-                          </span>
+                {/* Hint History Boxes (Completed Levels Only) */}
+                {allHints.length > 1 && (
+                  <div className="w-full space-y-4">
+                    <div className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500/50 uppercase mb-2 ml-1">
+                      TRANSMISSION LOG
+                    </div>
+                    {allHints.slice(0, -1).reverse().map((hintObj) => { // Reverse to show newest history first
+                      return (
+                        <div 
+                          key={hintObj.level}
+                          className="w-full static-overlay border border-cyan-900/30 bg-black/40 backdrop-blur-md p-6 sm:p-8 opacity-70 hover:opacity-100 transition-all duration-300"
+                        >
+                          <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
+                            <span className="text-cyan-800 text-xs font-mono shrink-0">✓</span>
+                            <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-700 uppercase">
+                              Log Entry: Signal {hintObj.level}
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm md:text-base font-mono leading-relaxed tracking-wide text-gray-500">
+                             &quot;{hintObj.h}&quot;
+                          </p>
                         </div>
-                        <p className={`text-xs sm:text-sm md:text-base font-mono leading-relaxed tracking-wide ${
-                          isLast ? "text-gray-200" : "text-gray-500"
-                        }`}>
-                           &quot;{displayText}&quot;
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
