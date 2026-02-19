@@ -65,13 +65,8 @@ export default function Scan() {
           setAllHints(data.allHints)
         }
 
-        // Only set hint if we don't have a scanned one or if it was missing
-        setCurrentHint(prev => {
-          if (!prev || prev === "[DATA MISSING: e]" || prev === "[SIGNAL LOST]") {
-            return data.hint?.h || "[SIGNAL LOST]"
-          }
-          return prev
-        })
+        // Do NOT set currentHint here. We only show it AFTER scanning.
+        // setCurrentHint(...) 
       }
     } catch (error) {
       console.error("Error loading level data:", error)
@@ -119,7 +114,7 @@ export default function Scan() {
       const expectedQRNumber = String(level)
       if (matchedQR === expectedQRNumber) {
         console.log("✅ Correct QR scanned! Advancing level automatically...")
-        // Automatically advance to next level after a short delay
+        // Automatically advance to next level after a delay
         setTimeout(async () => {
           try {
             setProcessing(true)
@@ -131,7 +126,7 @@ export default function Scan() {
             alert(error.message || "Error processing scan")
             setProcessing(false)
           }
-        }, 1000) // 1 second delay to show the hint
+        }, 4000) // 4 second delay to allow user to read the hint/confirmation
       } else {
         console.log("❌ Wrong QR - Expected:", expectedQRNumber, "Got:", matchedQR)
         setErrorMessage("PROTOCOL VIOLATION: OUT OF SEQUENCE SCAN DETECTED")
@@ -350,13 +345,13 @@ export default function Scan() {
                   </div>
                 </div>
 
-                {/* Active Hint (Intercepted Message) */}
-                {allHints.length > 0 && (
+                {/* Active Hint (Intercepted Message) - Only shown AFTER scan */}
+                {currentHint && (
                   <div className="w-full static-overlay border border-cyan-500/30 bg-black/40 backdrop-blur-md p-6 sm:p-8 hover:border-cyan-500/50 transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.1)]">
                     <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                       <span className="text-cyan-500 text-xs font-mono shrink-0 flicker">◉</span>
                       <span className="text-[10px] sm:text-xs font-mono tracking-widest text-cyan-500 text-glow uppercase">
-                        Incoming Transmission
+                        Message Decoded
                       </span>
                     </div>
                     <p className="text-xs sm:text-sm md:text-base font-mono leading-relaxed text-gray-200 tracking-wide">
